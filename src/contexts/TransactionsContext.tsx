@@ -1,9 +1,20 @@
 import { ReactNode, useEffect, useState, useCallback } from 'react'
 import { createContext } from 'use-context-selector'
-import { api } from '../lib/axios'
+
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  where,
+  Timestamp
+} from 'firebase/firestore'
+import { auth, db } from '../lib/firebase'
+import { onAuthStateChanged, signInAnonymously } from 'firebase/auth'
 
 interface Transaction {
-  id: number
+  id: string
   description: string
   type: 'income' | 'outcome'
   price: number
@@ -34,23 +45,57 @@ export const TransactionsContext = createContext({} as TransactionsContextType)
 export function TransactionsProvider({ children }: TransactionsProviderProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
-  const fetchTransactions = useCallback(async (query?: string) => {
-    const response = await api.get('transactions', {
-      params: {
-        _sort: 'createdAt',
-        _order: 'desc',
-        q: query
+  useEffect(() => {
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        signInAnonymously(auth)
       }
     })
-
-    setTransactions(response.data)
   }, [])
+
+  const fetchTransactions = useCallback(
+    async (searchQuery?: string) => {
+      const transactionsRef = collection(db, 'transactions')
+
+      let q = query(transactionsRef, orderBy('createdAt', 'desc'))
+
+      if (searchQuery) {
+        q = query(
+          transactionsRef,
+          where('description', '>=', searchQuery),
+          where('description', '<=', searchQuery + '\uf8ff'),
+          orderBy('createdAt', 'desc')
+        )
+      }
+
+      const snapshot = await getDocs(q)
+      const transactions: Transaction[] = snapshot.docs.map(doc => {
+        const data = doc.data()
+        const type =
+          data.type === 'income' || data.type === 'outcome'
+            ? data.type
+            : 'income'
+
+        return {
+          id: doc.id,
+          description: data.description,
+          price: data.price,
+          category: data.category,
+          type,
+          createdAt: (data.createdAt as Timestamp).toDate().toISOString()
+        }
+      })
+
+      setTransactions(transactions)
+    },
+    [setTransactions]
+  )
 
   const createTransaction = useCallback(
     async (data: CreateTransactionInput) => {
       const { description, price, category, type } = data
 
-      const response = await api.post('transactions', {
+      const docRef = await addDoc(collection(db, 'transactions'), {
         description,
         price,
         category,
@@ -58,9 +103,19 @@ export function TransactionsProvider({ children }: TransactionsProviderProps) {
         createdAt: new Date()
       })
 
-      setTransactions(state => [response.data, ...state])
+      setTransactions(state => [
+        {
+          id: docRef.id,
+          description,
+          price,
+          category,
+          type,
+          createdAt: new Date().toISOString()
+        },
+        ...state
+      ])
     },
-    []
+    [setTransactions]
   )
 
   useEffect(() => {
