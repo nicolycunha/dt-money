@@ -9,11 +9,35 @@ import {
 import { TransactionsContext } from '../../contexts/TransactionsContext'
 import { dateFormatter, priceFormatter } from '../../utils/formatter'
 import { useContextSelector } from 'use-context-selector'
+import { useAuth } from '../../contexts/AuthContext'
+import { Skeleton } from '../../components/Skeleton'
+import { SkeletonContainer } from '../../components/Skeleton/styles'
 
 export function Transactions() {
   const transactions = useContextSelector(TransactionsContext, context => {
     return context.transactions
   })
+
+  const { authReady } = useAuth()
+
+  if (!authReady) {
+    return (
+      <>
+        <SkeletonContainer>
+          <Skeleton width="100%" height="60px" radius="6px" />
+        </SkeletonContainer>
+        <SkeletonContainer>
+          <Skeleton width="" height="150px" radius="6px" />
+          <Skeleton width="" height="150px" radius="6px" />
+          <Skeleton width="" height="150px" radius="6px" />
+        </SkeletonContainer>
+
+        <SkeletonContainer>
+          <Skeleton width="100%" height="50px" radius="6px" />
+        </SkeletonContainer>
+      </>
+    )
+  }
 
   return (
     <div>

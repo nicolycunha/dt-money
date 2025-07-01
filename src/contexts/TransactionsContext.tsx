@@ -10,8 +10,7 @@ import {
   where,
   Timestamp
 } from 'firebase/firestore'
-import { auth, db } from '../lib/firebase'
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth'
+import { db } from '../lib/firebase'
 
 interface Transaction {
   id: string
@@ -44,14 +43,6 @@ export const TransactionsContext = createContext({} as TransactionsContextType)
 
 export function TransactionsProvider({ children }: TransactionsProviderProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
-
-  useEffect(() => {
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        signInAnonymously(auth)
-      }
-    })
-  }, [])
 
   const fetchTransactions = useCallback(
     async (searchQuery?: string) => {
