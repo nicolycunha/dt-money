@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
-interface Transaction {
+export interface Transaction {
   id: string
   description: string
   type: 'income' | 'outcome'

@@ -1,17 +1,15 @@
 import { Header } from '../../components/Header'
 import { Summary } from '../../components/Summary'
 import { SearchForm } from './components/SearchForm'
-import {
-  PriceHighlight,
-  TransactionsContainer,
-  TransactionsTable
-} from './styles'
+import { TransactionsContainer } from './styles'
 import { TransactionsContext } from '../../contexts/TransactionsContext'
-import { dateFormatter, priceFormatter } from '../../utils/formatter'
 import { useContextSelector } from 'use-context-selector'
 import { useAuth } from '../../contexts/AuthContext'
 import { Skeleton } from '../../components/Skeleton'
 import { SkeletonContainer } from '../../components/Skeleton/styles'
+import { TransactionsList } from '../../components/TransactionsCard'
+import { TransactionsTable } from '../../components/TransactionsTable'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 export function Transactions() {
   const transactions = useContextSelector(TransactionsContext, context => {
@@ -19,6 +17,7 @@ export function Transactions() {
   })
 
   const { authReady } = useAuth()
+  const isMobile = useIsMobile()
 
   if (!authReady) {
     return (
@@ -46,27 +45,11 @@ export function Transactions() {
 
       <TransactionsContainer>
         <SearchForm />
-        <TransactionsTable>
-          <tbody>
-            {transactions.map(transaction => {
-              return (
-                <tr key={transaction.id}>
-                  <td width="50%">{transaction.description}</td>
-                  <td>
-                    <PriceHighlight variant={transaction.type}>
-                      {transaction.type === 'outcome' && '- '}
-                      {priceFormatter.format(transaction.price)}
-                    </PriceHighlight>
-                  </td>
-                  <td>{transaction.category}</td>
-                  <td>
-                    {dateFormatter.format(new Date(transaction.createdAt))}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </TransactionsTable>
+        {isMobile ? (
+          <TransactionsList transactions={transactions} />
+        ) : (
+          <TransactionsTable transactions={transactions} />
+        )}
       </TransactionsContainer>
     </div>
   )
