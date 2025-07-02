@@ -11,6 +11,7 @@ import {
   Timestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
+import { useAuth } from './AuthContext'
 
 export interface Transaction {
   id: string
@@ -109,9 +110,12 @@ export function TransactionsProvider({ children }: TransactionsProviderProps) {
     [setTransactions]
   )
 
+  const { authReady } = useAuth()
+
   useEffect(() => {
+    if (!authReady) return
     fetchTransactions()
-  }, [fetchTransactions])
+  }, [authReady, fetchTransactions])
 
   return (
     <TransactionsContext.Provider
